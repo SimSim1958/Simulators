@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>סימולטור לבניית תקציב אפקטיבי</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { width: 80%; margin: 0 auto; }
+        input, button { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>סימולטור לבניית תקציב אפקטיבי</h1>
+        
+        <h2>הכנסות</h2>
+        <input type="number" id="income" placeholder="הכנסה חודשית">
+        
+        <h2>הוצאות</h2>
+        <input type="number" id="expenses-essential" placeholder="הוצאות הכרחיות">
+        <input type="number" id="expenses-wants" placeholder="הוצאות רצויות">
+        
+        <h2>חיסכון והשקעות</h2>
+        <input type="number" id="savings" placeholder="חיסכון והשקעות">
+        
+        <br>
+        <button onclick="calculateBudget()">חשב תקציב</button>
+        
+        <h2>תוצאות</h2>
+        <p id="result"></p>
+    </div>
+
+    <script>
+        function calculateBudget() {
+            const income = parseFloat(document.getElementById('income').value);
+            const expensesEssential = parseFloat(document.getElementById('expenses-essential').value);
+            const expensesWants = parseFloat(document.getElementById('expenses-wants').value);
+            const savings = parseFloat(document.getElementById('savings').value);
+
+            const totalExpenses = expensesEssential + expensesWants + savings;
+            const balance = income - totalExpenses;
+
+            const essentialPercentage = (expensesEssential / income) * 100;
+            const wantsPercentage = (expensesWants / income) * 100;
+            const savingsPercentage = (savings / income) * 100;
+
+            let result = `סך הכל הוצאות: ${totalExpenses.toFixed(2)} ש"ח<br>`;
+            result += `יתרה: ${balance.toFixed(2)} ש"ח<br><br>`;
+            result += `הוצאות הכרחיות: ${essentialPercentage.toFixed(2)}%<br>`;
+            result += `הוצאות רצויות: ${wantsPercentage.toFixed(2)}%<br>`;
+            result += `חיסכון והשקעות: ${savingsPercentage.toFixed(2)}%<br><br>`;
+
+            if (essentialPercentage <= 50 && wantsPercentage <= 30 && savingsPercentage >= 20) {
+                result += "התקציב שלך מאוזן היטב לפי כלל 50/30/20!";
+            } else {
+                result += "יש מקום לשיפור בחלוקת התקציב שלך. נסה להתקרב לכלל 50/30/20.";
+            }
+
+            document.getElementById('result').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
