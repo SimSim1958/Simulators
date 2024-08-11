@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סימולציית חינוך תעבורתי</title>
+    <style>
+        #road {
+            width: 100%;
+            height: 300px;
+            background-color: #888;
+            position: relative;
+            overflow: hidden;
+        }
+        .car {
+            width: 100px;
+            height: 50px;
+            position: absolute;
+            cursor: move;
+        }
+        .lane {
+            position: absolute;
+            width: 100%;
+        }
+        .lane-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background-color: white;
+        }
+        .intersection-line {
+            position: absolute;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>סימולציית חינוך תעבורתי</h1>
+        <div>
+            <button onclick="selectRoadType('two-way')">כביש דו-סטרי</button>
+            <button onclick="selectRoadType('one-way')">כביש חד-סטרי</button>
+            <button onclick="selectRoadType('intersection')">צומת</button>
+        </div>
+        <div id="road"></div>
+    </div>
+
+    <script>
+        const road = document.getElementById('road');
+        const cars = [];
+        const colors = ['#ff0000', '#00ff00', '#0000ff'];
+        let selectedCar = null;
+        let offsetX, offsetY;
+
+        function createCar(color) {
+            const car = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            car.setAttribute("viewBox", "0 0 100 50");
+            car.classList.add("car");
+            car.innerHTML = `
+                <path d="M15,35 Q20,20 30,20 L70,20 Q80,20 85,35 L90,35 Q90,40 85,40 L15,40 Q10,40 10,35 Z" fill="${color}"></path>
+                <circle cx="25" cy="40" r="7" fill="#333"></circle>
+                <circle cx="75" cy="40" r="7" fill="#333"></circle>
+                <path d="M30,20 L70,20 L65,10 L35,10 Z" fill="#3333ff"></path>
+            `;
+            car.style.left = Math.random() * (road.clientWidth - 100) + 'px';
+            car.style.top = Math.random() * (road.clientHeight - 50) + 'px';
+            road.appendChild(car);
+            cars.push(car);
+
+            car.addEventListener('mousedown', startDragging);
+        }
+
+        function startDragging(e) {
+            selectedCar = e.target.closest('.car');
+            const rect = selectedCar.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDragging);
+        }
+
+        function drag(e) {
+            if (selectedCar) {
+                const x = e.clientX - road.getBoundingClientRect().left - offsetX;
+                const y = e.clientY - road.getBoundingClientRect().top - offsetY;
+                selectedCar.style.left = Math.max(0, Math.min(road.clientWidth - 100, x)) + 'px';
+                selectedCar.style.top = Math.max(0, Math.min(road.clientHeight - 50, y)) + 'px';
+            }
+        }
+
+        function stopDragging() {
+            selectedCar = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDragging);
+        }
+
+        function selectRoadType(type) {
+            road.innerHTML = ''; // Clear previous road layout
+            switch(type) {
+                case 'two-way':
+                    createTwoWayRoad();
+                    break;
+                case 'one-way':
+                    createOneWayRoad();
+                    break;
+                case 'intersection':
+                    createIntersection();
+                    break;
+            }
+            // Recreate cars after changing road type
+            cars.forEach(car => road.appendChild(car));
+        }
+
+        function createTwoWayRoad() {
+            const lane1 = document.createElement('div');
+            lane1.className = 'lane';
+            lane1.style.left = '0';
+            lane1.style.width = '100%';
+            lane1.style.height = '50%';
+
+            const lane2 = document.createElement('div');
+            lane2.className = 'lane';
+            lane2.style.left = '0';
+            lane2.style.top = '50%';
+            lane2.style.width = '100%';
+            lane2.style.height = '50%';
+
+            const centerLine = document.createElement('div');
+            centerLine.className = 'lane-line';
+            centerLine.style.top = '50%';
+            centerLine.style.width = '100%';
+
+            road.appendChild(lane1);
+            road.appendChild(lane2);
+            road.appendChild(centerLine);
+        }
+
+        function createOneWayRoad() {
+            const lane = document.createElement('div');
+            lane.className = 'lane';
+            lane.style.width = '100%';
+            lane.style.height = '100%';
+
+            const topLine = document.createElement('div');
+            topLine.className = 'lane-line';
+            topLine.style.top = '25%';
+
+            const bottomLine = document.createElement('div');
+            bottomLine.className = 'lane-line';
+            bottomLine.style.top = '75%';
+
+            road.appendChild(lane);
+            road.appendChild(topLine);
+            road.appendChild(bottomLine);
+        }
+
+        function createIntersection() {
+            // Create four equal squares
+            for (let i = 0; i < 4; i++) {
+                const square = document.createElement('div');
+                square.className = 'lane';
+                square.style.width = '50%';
+                square.style.height = '50%';
+                square.style.left = i % 2 === 0 ? '0' : '50%';
+                square.style.top = i < 2 ? '0' : '50%';
+                square.style.border = '2px solid white';
+                road.appendChild(square);
+            }
+
+            // Add intersection lines
+            const horizontalLine = document.createElement('div');
+            horizontalLine.className = 'intersection-line';
+            horizontalLine.style.top = '50%';
+            horizontalLine.style.left = '0';
+            horizontalLine.style.width = '100%';
+            horizontalLine.style.height = '4px';
+
+            const verticalLine = document.createElement('div');
+            verticalLine.className = 'intersection-line';
+            verticalLine.style.top = '0';
+            verticalLine.style.left = '50%';
+            verticalLine.style.width = '4px';
+            verticalLine.style.height = '100%';
+
+            road.appendChild(horizontalLine);
+            road.appendChild(verticalLine);
+        }
+
+        // Initialize with two-way road
+        selectRoadType('two-way');
+
+        // Create three cars
+        for (let i = 0; i < 3; i++) {
+            createCar(colors[i]);
+        }
+    </script>
+</body>
+</html>

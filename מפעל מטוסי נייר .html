@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אתגר מטוסי הנייר הקבוצתי - גרסה מעודכנת</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #timer, #resources, #score, #valid-planes, #total-planes, #profit {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        #plane-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            min-height: 100px;
+        }
+        .paper-plane {
+            font-size: 40px;
+            margin: 5px;
+            position: relative;
+        }
+        .invalid-mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 50px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>אתגר מטוסי הנייר הקבוצתי</h1>
+        <div>
+            <label for="game-duration">משך המשחק (בדקות):</label>
+            <input type="number" id="game-duration" min="1" max="60" value="15">
+            <button id="start-game">התחל משחק</button>
+        </div>
+        <div id="timer">זמן נותר: <span id="time">00:00</span></div>
+        <div id="resources">תקציב: <span id="budget">5000000</span> ₪</div>
+        <div id="profit">רווח תפעולי: <span id="profit-value">0</span> ₪</div>
+        <div id="score">ציון: <span id="points">0</span></div>
+        <div id="valid-planes">מטוסים כשירים: <span id="valid-count">0</span></div>
+        <div id="total-planes">סה"כ מטוסים: <span id="total-count">0</span></div>
+        <div id="plane-container"></div>
+        <button id="build-btn" disabled>בנה מטוס (500,000₪)</button>
+        <button id="draw-symbol-btn" disabled>צייר סמל על המטוס</button>
+        <button id="test-btn" disabled>בדוק כשירות המטוס</button>
+    </div>
+
+    <script>
+        let timeLeft = 0;
+        let budget = 5000000;
+        let profit = 0;
+        let validPlanes = 0;
+        let totalPlanes = 0;
+        let planes = [];
+        const MAX_PLANES = 10;
+        const MAX_BUDGET = 7500000;
+        let currentPlaneIndex = -1;
+        let timer;
+
+        const timerEl = document.getElementById('time');
+        const budgetEl = document.getElementById('budget');
+        const profitEl = document.getElementById('profit-value');
+        const pointsEl = document.getElementById('points');
+        const validCountEl = document.getElementById('valid-count');
+        const totalCountEl = document.getElementById('total-count');
+        const planeContainerEl = document.getElementById('plane-container');
+        const buildBtn = document.getElementById('build-btn');
+        const drawSymbolBtn = document.getElementById('draw-symbol-btn');
+        const testBtn = document.getElementById('test-btn');
+        const startGameBtn = document.getElementById('start-game');
+        const gameDurationInput = document.getElementById('game-duration');
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function calculateScore() {
+            const budgetScore = (budget / MAX_BUDGET) * 100;
+            const planesScore = (validPlanes / MAX_PLANES) * 100;
+            return Math.round((budgetScore + planesScore) / 2);
+        }
+
+        function updateDisplay() {
+            timerEl.textContent = formatTime(timeLeft);
+            budgetEl.textContent = budget.toLocaleString();
+            profitEl.textContent = profit.toLocaleString();
+            pointsEl.textContent = calculateScore();
+            validCountEl.textContent = validPlanes;
+            totalCountEl.textContent = totalPlanes;
+            planeContainerEl.innerHTML = planes.map(plane => 
+                `<div class="paper-plane" style="color: ${plane.tested ? (plane.valid ? 'green' : 'black') : 'black'}">
+                    ✈️${plane.hasSymbol ? '🔰' : ''}
+                    ${plane.tested && !plane.valid ? '<span class="invalid-mark">X</span>' : ''}
+                </div>`
+            ).join('');
+            
+            buildBtn.disabled = (budget < 500000 || totalPlanes >= MAX_PLANES || currentPlaneIndex !== -1);
+            drawSymbolBtn.disabled = (currentPlaneIndex === -1 || planes[currentPlaneIndex].hasSymbol);
+            testBtn.disabled = (currentPlaneIndex === -1 || !planes[currentPlaneIndex].hasSymbol || planes[currentPlaneIndex].tested);
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function buildPlane() {
+            if (budget >= 500000 && totalPlanes < MAX_PLANES) {
+                budget -= 500000;
+                planes.push({ tested: false, valid: false, hasSymbol: false });
+                totalPlanes++;
+                currentPlaneIndex = planes.length - 1;
+                updateDisplay();
+            } else {
+                alert('אין מספיק תקציב או הגעת למקסימום מטוסים!');
+            }
+        }
+
+        function drawSymbol() {
+            if (currentPlaneIndex !== -1 && !planes[currentPlaneIndex].hasSymbol) {
+                planes[currentPlaneIndex].hasSymbol = true;
+                updateDisplay();
+            }
+        }
+
+        function testPlane() {
+            if (currentPlaneIndex !== -1 && planes[currentPlaneIndex].hasSymbol && !planes[currentPlaneIndex].tested) {
+                planes[currentPlaneIndex].tested = true;
+                planes[currentPlaneIndex].valid = Math.random() < 0.7; // 70% chance of being valid
+                if (planes[currentPlaneIndex].valid) {
+                    validPlanes++;
+                    budget += 750000;
+                    profit += 250000;
+                }
+                currentPlaneIndex = -1; // Reset for next plane
+                updateDisplay();
+            }
+        }
+
+        function endGame() {
+            const finalScore = calculateScore();
+            alert(`המשחק הסתיים! 
+            מטוסים שנבנו: ${totalPlanes}
+            מטוסים כשירים: ${validPlanes}
+            רווח תפעולי: ${profit.toLocaleString()} ₪
+            תקציב סופי: ${budget.toLocaleString()} ₪
+            הציון הסופי שלך: ${finalScore}`);
+            buildBtn.disabled = true;
+            drawSymbolBtn.disabled = true;
+            testBtn.disabled = true;
+            startGameBtn.disabled = false;
+            gameDurationInput.disabled = false;
+        }
+
+        function startGame() {
+            const duration = parseInt(gameDurationInput.value);
+            if (isNaN(duration) || duration < 1 || duration > 60) {
+                alert('אנא הכנס זמן תקין בין 1 ל-60 דקות.');
+                return;
+            }
+            timeLeft = duration * 60;
+            budget = 5000000;
+            profit = 0;
+            validPlanes = 0;
+            totalPlanes = 0;
+            planes = [];
+            currentPlaneIndex = -1;
+            clearInterval(timer);
+            startTimer();
+            updateDisplay();
+            buildBtn.disabled = false;
+            startGameBtn.disabled = true;
+            gameDurationInput.disabled = true;
+        }
+
+        buildBtn.addEventListener('click', buildPlane);
+        drawSymbolBtn.addEventListener('click', drawSymbol);
+        testBtn.addEventListener('click', testPlane);
+        startGameBtn.addEventListener('click', startGame);
+
+        updateDisplay();
+    </script>
+</body>
+</html>

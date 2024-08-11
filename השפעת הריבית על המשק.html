@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סימולטור כלכלי דינמי</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
+            padding: 8px;
+        }
+        #currentValues {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #chart {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>סימולטור כלכלי דינמי</h1>
+        <div class="input-group">
+            <label for="interestRate">שער הריבית:</label>
+            <input type="range" id="interestRate" min="0" max="10" step="0.1" value="0.0">
+            <span id="interestRateValue">0.0%</span>
+        </div>
+        <div id="currentValues">
+            <p>ריבית הפריים: <span id="primeRate">1.5%</span></p>
+            <p>שיעור האינפלציה: <span id="inflationRate">4.65%</span></p>
+            <p>שיעור האבטלה: <span id="unemploymentRate">4.40%</span></p>
+            <p>שיעור הצמיחה: <span id="growthRate">3.72%</span></p>
+        </div>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+        class EconomySimulator {
+            constructor() {
+                this.interest_rate = 0.0;
+                this.prime_rate = 1.5;
+                this.inflation_rate = 4.65;
+                this.unemployment_rate = 4.40;
+                this.growth_rate = 3.72;
+            }
+
+            update(newInterestRate) {
+                const interestRateChange = newInterestRate - this.interest_rate;
+                this.interest_rate = newInterestRate;
+                this.prime_rate = this.interest_rate + 1.5;
+
+                // Update inflation
+                this.inflation_rate -= interestRateChange * 0.5;
+                this.inflation_rate = Math.max(0, Math.min(this.inflation_rate, 10));
+
+                // Update unemployment
+                this.unemployment_rate += interestRateChange * 0.3;
+                this.unemployment_rate = Math.max(2, Math.min(this.unemployment_rate, 15));
+
+                // Update growth
+                this.growth_rate -= interestRateChange * 0.4;
+                this.growth_rate = Math.max(0, Math.min(this.growth_rate, 5));
+            }
+
+            get_state() {
+                return {
+                    "ריבית": this.interest_rate.toFixed(2),
+                    "ריבית הפריים": this.prime_rate.toFixed(2),
+                    "אינפלציה": this.inflation_rate.toFixed(2),
+                    "אבטלה": this.unemployment_rate.toFixed(2),
+                    "צמיחה": this.growth_rate.toFixed(2)
+                };
+            }
+        }
+
+        const simulator = new EconomySimulator();
+        let chart;
+
+        function updateSimulation() {
+            const interestRate = parseFloat(document.getElementById('interestRate').value);
+            document.getElementById('interestRateValue').textContent = interestRate.toFixed(1) + '%';
+
+            simulator.update(interestRate);
+            const state = simulator.get_state();
+
+            document.getElementById('primeRate').textContent = state['ריבית הפריים'] + '%';
+            document.getElementById('inflationRate').textContent = state['אינפלציה'] + '%';
+            document.getElementById('unemploymentRate').textContent = state['אבטלה'] + '%';
+            document.getElementById('growthRate').textContent = state['צמיחה'] + '%';
+
+            updateChart(state);
+        }
+
+        function updateChart(state) {
+            if (chart) {
+                Object.keys(state).forEach((key, index) => {
+                    chart.data.datasets[0].data[index] = parseFloat(state[key]);
+                });
+                chart.update();
+            } else {
+                initChart(state);
+            }
+        }
+
+        function initChart(state) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            const labels = Object.keys(state);
+            const data = Object.values(state).map(v => parseFloat(v));
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ערכים כלכליים',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 15
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('interestRate').addEventListener('input', updateSimulation);
+        updateSimulation(); // Initialize
+    </script>
+</body>
+</html>
